@@ -26,18 +26,27 @@ void run_emv_transaction(void)
     parse_tlv(recv_buf, recv_len);
 
 
-    size_t a5_len;
-    const uint8_t *a5_value = find_tag(recv_buf, recv_len, 0xA5, &a5_len);
-    if (!a5_value) {
-        printf("No A5 tag found.\n");
+    // Step 1: Extract FCI Template (6F)
+    size_t fci_len;
+    const uint8_t *fci_template = find_tag(recv_buf, recv_len, 0x6F, &fci_len);
+    if (!fci_template) {
+        printf("No 6F FCI Template found.\n");
         return;
     }
 
+    // Step 2: Extract A5 from inside 6F
+    size_t a5_len;
+    const uint8_t *a5_val = find_tag(fci_template, fci_len, 0xA5, &a5_len);
+    if (!a5_val) {
+        printf("No A5 tag found inside 6F.");
+        return;
+    }
+
+    // Step 3: Extract 9F38 PDOL from inside A5
     size_t pdol_len;
-    const uint8_t *pdol = find_tag(a5_value, a5_len, 0x9F38, &pdol_len);
-    if (!pdol)
-    {
-        printf("No PDOL found, skipping GPO.\n");
+    const uint8_t *pdol = find_tag(a5_val, a5_len, 0x9F38, &pdol_len);
+    if (!pdol) {
+        printf("No PDOL (9F38) found inside A5.\n");
         return;
     }
 
