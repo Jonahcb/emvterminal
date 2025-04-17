@@ -68,4 +68,71 @@ void run_emv_transaction(void)
 
     printf("\n-- GPO Response --\n");
     parse_tlv(recv_buf, recv_len);
+
+    // Step 4: Read Record based on AFL = 94 tag from GPO
+    size_t gpo_len;
+    const uint8_t *gpo_template = find_tag(recv_buf, recv_len, 0x77, &gpo_len);
+    if (!gpo_template) {
+        printf("No 77 template found in GPO response.\n");
+        return;
+    }
+
+    size_t afl_len;
+    const uint8_t *afl = find_tag(gpo_template, gpo_len, 0x94, &afl_len);
+    if (!afl || afl_len < 4) {
+        printf("AFL (94) not found or too short.\n");
+        return;
+    }
+
+    uint8_t sfi = afl[0] >> 3;
+    uint8_t first_record = afl[1];
+
+    uint8_t read_record_apdu[] = {
+        0x00, 0xB2, first_record, (uint8_t)((sfi << 3) | 0x04), 0x00
+    };
+
+    recv_len = sizeof(recv_buf);
+    if (!transmit_apdu(read_record_apdu, sizeof(read_record_apdu), recv_buf, &recv_len)) {
+        printf("READ RECORD failed.\n");
+        return;
+    }
+
+    printf("\n-- READ RECORD Response --\n");
+    parse_tlv(recv_buf, recv_len);
+
+
+
+    // Step 5: Generate Application Cryptogram (GEN AC)
+    uint8_t genac_apdu[] = {
+        0x80, 0xAE, 0x00, 0x00, 0x0C, // CLA, INS, P1, P2, Lc (12 bytes)
+        0x00, 0x00, 0x00, 0x00,       // Amount Authorized = 0
+        0x00, 0x00, 0x00, 0x00,       // Amount Other = 0
+        0x08, 0x40, 0x24, 0x04,       // Country Code = 0840, Date = 2024-04-xx
+        0x00                          // Le
+    };
+
+    recv_len = sizeof(recv_buf);
+    if (!transmit_apdu(genac_apdu, sizeof(genac_apdu), recv_buf, &recv_len)) {
+        printf("GEN AC failed.\n");
+        return;
+    }
+
+    printf("\n-- GENERATE AC Response --\n");
+    parse_tlv(recv_buf, recv_len);
+
+    // Interpret result of GEN AC (Look for 9F27 tag: CID)
+    size_t ac_len;
+    const uint8_t *cid_ptr = find_tag(recv_buf, recv_len, 0x9F27, &ac_len);
+    if (cid_ptr && ac_len == 1) {
+        uint8_t cid = cid_ptr[0];
+        printf("\n-- Cryptogram Information Data (CID): %02X --\n", cid);
+        switch (cid) {
+            case 0x00: printf("AAC: Transaction Declined by Card\n"); break;
+            case 0x40: printf("TC: Transaction Approved (Offline)\n"); break;
+            case 0x80: printf("ARQC: Go Online for Authorization\n"); break;
+            default: printf("Unknown or Proprietary CID\n"); break;
+        }
+    } else {
+        printf("\nCID (9F27) not found in GEN AC response.\n");
+    }
 }

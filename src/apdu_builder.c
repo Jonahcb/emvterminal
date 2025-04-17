@@ -1,4 +1,10 @@
+#include "emv_terminal.h"
+#include "pcsc_driver.h"
+#include "tlv_parser.h"
 #include "apdu_builder.h"
+#include <stdint.h>
+#include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 
 int build_gpo_apdu(const uint8_t *pdol, size_t pdol_len, uint8_t *out_apdu, size_t *out_len) {
@@ -12,8 +18,54 @@ int build_gpo_apdu(const uint8_t *pdol, size_t pdol_len, uint8_t *out_apdu, size
         uint8_t tag2 = 0;
         if ((tag1 & 0x1F) == 0x1F) tag2 = pdol[i++];
         uint8_t len = pdol[i++];
-        memset(&pdol_data[pdol_data_len], 0x00, len);
-        pdol_data_len += len;
+
+        // Fill with meaningful defaults based on tag
+        if ((tag1 == 0x9F && tag2 == 0x66) && len == 4) {
+            // Terminal Transaction Qualifiers
+            pdol_data[pdol_data_len++] = 0xE0;
+            pdol_data[pdol_data_len++] = 0x00;
+            pdol_data[pdol_data_len++] = 0xC8;
+            pdol_data[pdol_data_len++] = 0x00;
+        } else if ((tag1 == 0x9F && tag2 == 0x02) && len == 6) {
+            // Amount Authorized
+            memset(&pdol_data[pdol_data_len], 0x00, 5);
+            pdol_data[pdol_data_len + 5] = 0x01; // 1 cent
+            pdol_data_len += 6;
+        } else if ((tag1 == 0x9F && tag2 == 0x03) && len == 6) {
+            // Amount Other
+            memset(&pdol_data[pdol_data_len], 0x00, 6);
+            pdol_data_len += 6;
+        } else if ((tag1 == 0x9F && tag2 == 0x1A) && len == 2) {
+            // Terminal Country Code (USA = 0840)
+            pdol_data[pdol_data_len++] = 0x08;
+            pdol_data[pdol_data_len++] = 0x40;
+        } else if (tag1 == 0x95 && len == 5) {
+            // Terminal Verification Results
+            memset(&pdol_data[pdol_data_len], 0x00, 5);
+            pdol_data_len += 5;
+        } else if ((tag1 == 0x5F && tag2 == 0x2A) && len == 2) {
+            // Transaction Currency Code (USD = 0840)
+            pdol_data[pdol_data_len++] = 0x08;
+            pdol_data[pdol_data_len++] = 0x40;
+        } else if ((tag1 == 0x9A) && len == 3) {
+            // Transaction Date (YYMMDD)
+            pdol_data[pdol_data_len++] = 0x24; // 2024
+            pdol_data[pdol_data_len++] = 0x04; // April
+            pdol_data[pdol_data_len++] = 0x17; // 17th
+        } else if ((tag1 == 0x9C) && len == 1) {
+            // Transaction Type (00 = purchase)
+            pdol_data[pdol_data_len++] = 0x00;
+        } else if ((tag1 == 0x9F && tag2 == 0x37) && len == 4) {
+            // Unpredictable Number
+            pdol_data[pdol_data_len++] = 0x12;
+            pdol_data[pdol_data_len++] = 0x34;
+            pdol_data[pdol_data_len++] = 0x56;
+            pdol_data[pdol_data_len++] = 0x78;
+        } else {
+            // Default: fill with zeros
+            memset(&pdol_data[pdol_data_len], 0x00, len);
+            pdol_data_len += len;
+        }
     }
 
     uint8_t cmd_data[70];
@@ -32,5 +84,13 @@ int build_gpo_apdu(const uint8_t *pdol, size_t pdol_len, uint8_t *out_apdu, size
     out_apdu[offset++] = 0x00;
 
     *out_len = offset;
+
+    // Print full GPO APDU message
+    printf("\n-- GPO APDU to be sent (%zu bytes) --\n", *out_len);
+    for (size_t j = 0; j < *out_len; j++) {
+        printf("%02X ", out_apdu[j]);
+    }
+    printf("\n");
+
     return 1;
 }
