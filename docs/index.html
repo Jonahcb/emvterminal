@@ -1,45 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Final Project</title>
-  <!-- Link to your CSS file -->
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EMV Terminal Project</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; padding: 20px; max-width: 800px; margin: auto; }
+        h1, h2 { color: #333; }
+        section { margin-bottom: 30px; }
+        p { color: #555; }
+        code { background-color: #f4f4f4; padding: 2px 4px; border-radius: 4px; font-family: monospace; }
+    </style>
 </head>
 <body>
-  <header>
-    <h1>Project Title</h1>
-    <nav>
-      <ul>
-        <li><a href="index.html">Home</a></li>
-        <!-- Add more navigation links as needed -->
-      </ul>
-    </nav>
-  </header>
 
-  <main>
-    <section id="intro">
-      <h2>Introduction</h2>
-      <p>Welcome to our final project site. Describe your project here.</p>
+    <h1>EMV Terminal Communication Project</h1>
+
+    <!-- Introduction Section -->
+    <section id="introduction">
+        <h2>Introduction</h2>
+        <p>
+            Our goal for this project is to implement a functional simulation of 
+            an EMV (Europay, Mastercard, Visa) terminal capable of initiating a 
+            transaction with a standard chip-enabled payment card. 
+            We want to cover the key stages of the EMV transaction flow, 
+            including application selection, retrieving card data, processing 
+            restrictions, and culminating in a transaction decision (approval, 
+            decline, or referral online).
+        </p>
     </section>
 
-    <!-- Add more sections for different parts of your project -->
-    <section id="features">
-      <h2>Features</h2>
-      <ul>
-        <li>Feature 1</li>
-        <li>Feature 2</li>
-        <li>Feature 3</li>
-      </ul>
+    <!-- System Description -->
+    <section id="system-description">
+        <h2>System Description</h2>
+        <p>
+            Upon execution, the program first establishes communication with 
+            a connected smart card reader using the PC/SC interface. It 
+            initializes the necessary system resources, identifies an available 
+            reader, and attempts to connect to an inserted smart card. 
+            If successful, the core EMV transaction simulation begins. 
+            This involves a sequence of command-response interactions with 
+            the card, managed by the main EMV logic module. 
+            The process starts by selecting the appropriate payment application 
+            on the card. This is typically identified by its Application Identifier (AID). 
+            The card's response provides initial configuration data, including a 
+            list of data elements the terminal needs to supply (the Processing Data 
+            Object List, or PDOL).
+        </p>
+        <p>
+            Using the PDOL, the terminal constructs and sends a Get Processing 
+            Options (GPO) command, providing necessary transaction context like 
+            amount (set to zero in this simulation), date, and country code. 
+            The card responds with processing information, including the 
+            Application File Locator (AFL), which points to specific data files 
+            stored on the card. The terminal then issues Read Record commands 
+            based on the AFL to retrieve essential application data. Finally, 
+            a Generate Application Cryptogram (GENERATE AC) command is sent, 
+            requesting the card to perform cryptographic calculations and provide 
+            a cryptogram that indicates the card's decision on the transaction 
+            (such as approve offline, decline offline, or request online authorization). 
+            The program parses this response, specifically looking for the 
+            Cryptogram Information Data (CID), to determine and display this 
+            initial outcome. After the transaction sequence concludes, the program 
+            disconnects from the card and releases the smart card reader resources 
+            before terminating.
+        </p>
     </section>
-  </main>
 
-  <footer>
-    <p>&copy; 2025 Kevin Shao & Jonah Bernard</p>
-  </footer>
+    <!-- System Diagram -->
 
-  <!-- Link to your JavaScript file -->
-  <script src="scripts.js"></script>
+
+    <!-- Demo -->
+
+
+    <!-- Testing -->
+
+    <footer>
+        <p>&copy; 2025 Kevin Shao & Jonah Bernard</p>
+    </footer>
+
 </body>
-</html>
+</html> 
