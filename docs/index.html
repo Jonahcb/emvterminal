@@ -78,14 +78,54 @@
                 style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"
                 src="https://www.youtube.com/watch?v=fenbdWo8N7Q&ab_channel=ManifoldMath"
                 title="EMV Terminal Demo"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
                 allowfullscreen>
             </iframe>
         </div>
     </section>
 
+    <!-- Development -->
+    <section id="development">
+        <h2>Development</h2>
+        <p>
+            During initial development, we faced significant debugging challenges. 
+            We experimented with various configuration settings, including pin 
+            selection and pull-up resistors, and we tested different serial 
+            communication protocols. Using an oscilloscope, we verified that 
+            the I²C protocol was correctly sending the slave address followed by 
+            a processing signal. However, the system encountered a persistent issue 
+            where it continuously looped, repeatedly transmitting the same 
+            slave address and APDU, hindering progress. 
+        </p>
+        <p>
+            To overcome the communication issues, we transitioned to using an 
+            Arduino board. This allowed us to successfully implement communication 
+            with the NFC board using a reliable, pre-made I²C library. 
+            At the time the demo was filmed, we no longer had access to the Arduino board. 
+            Hence, we used a Sony Felicia NFC reader which works in a similar way.
+        </p>
+    </section>
+
     <!-- Testing -->
-     
+    <section id="testing">
+        <h2>Testing</h2>
+        <p>
+            We used Mastercard and Visa NFC cards equipped with EMV chips to test 
+            our functionality. Our test showed that the system failed to 
+            initiate a connection when no card was present. However, placing a card 
+            on the reader triggered a successful transaction flow that conformed to EMV standards.
+        </p>
+        <p>
+            The image below shows the cards we used for testing.
+        </p>
+        <div style="text-align: center; margin: 20px 0;">
+            <img 
+                src="docs/cards_test.png" 
+                alt="EMV test cards used for testing" 
+                style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+            >
+        </div>
+    </section>
 
     <footer>
         <p>&copy; 2025 Kevin Shao & Jonah Bernard</p>
